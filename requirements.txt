@@ -1,0 +1,15 @@
+python-dotenv
+streamlit
+langchain-community
+langchain-text-splitters
+langchain-openai
+unstructured
+unstructured[pdf]
+transformers
+sentence-transformers
+nltk
+chromadb
+langchain-chroma
+azure-search-documents
+azure.identity
+google-cloud-storage
