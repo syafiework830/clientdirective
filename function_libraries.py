@@ -89,7 +89,7 @@ def get_indexname(client):
         case "M&T Bank":
             return "cdr-mtbank"
         case "Fannie Mae":
-            return "cdr-fannymae"
+            return "cdr-fanniemae"
         case "Freddie Mac":
             return "cdr-freddiemac"
         case _:
