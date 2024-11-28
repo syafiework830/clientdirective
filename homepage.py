@@ -1,9 +1,13 @@
 import streamlit as st
 from rag_bot import bot_model
 from function_libraries import get_indexname, retrieve_vectorized_title
-from google.cloud import storage
-import json
-import datetime
+from azure.storage.blob import BlobServiceClient
+import os, json, datetime, dotenv
+
+dotenv.load_dotenv()
+
+STORAGE_CONTAINER_STRING = os.environ.get("STORAGE_CONTAINER_STRING")
+STORAGE_CONTAINER_NAME = os.environ.get("STORAGE_CONTAINER_NAME")
 
 # Page config
 st.set_page_config(
@@ -119,6 +123,8 @@ if "feedback_per_message" not in st.session_state:
 # Header
 header_container = st.container()
 
+#====================================================== LEFT SIDE BAR
+
 # Left sidebar for client selection
 with st.sidebar:
     st.write()
@@ -140,30 +146,26 @@ with st.sidebar:
 
     st.write('-'*10)
 
+    st.header("Export Chat History", divider= True)
     name = st.text_input("What is your name?")
+    
+    def export_history(file_content, file_name):
+        blob_service_client = BlobServiceClient.from_connection_string(STORAGE_CONTAINER_STRING)
+        container_client = blob_service_client.get_container_client(STORAGE_CONTAINER_NAME)
+        blob_client = container_client.get_blob_client(file_name)
+        blob_client.upload_blob(file_content, overwrite=True)
+        return st.write(f"File {file_name} uploaded successfully to Azure Blob Storage")
 
-
-    def upload_to_gcs(file_content, bucket_name, destination_blob_name):
-        # Initialize the Google Cloud Storage client 
-        client = storage.Client.from_service_account_json("private_key.json")
-        bucket = client.get_bucket(bucket_name)
-        blob = bucket.blob(destination_blob_name)
-        
-        # Upload the file content
-        blob.upload_from_string(file_content, content_type='application/json')
-
-    if st.button("Export Chat History"):
+    if st.button("Export Chat"):
         # Prepare chat history data
         timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-        file_name = f"{name}_{timestamp}_chat_history.json"
+        file_name = f"{name}_{timestamp}_chat_history.json"  
         file_content = json.dumps(st.session_state.chat_history, indent=4)
 
-        # Upload file to Google Cloud Storage
-        bucket_name = "json-bucket-cdrtest"  # Replace with your Google Cloud Storage bucket name
-        upload_to_gcs(file_content, bucket_name, file_name)
+        # Call the function to create the download button
+        export_history(file_content, file_name)
 
-        st.success(f"Chat history uploaded to Google Cloud Storage as `{file_name}`!")
-    
+        st.success(f"Chat history ready for download as `{file_name}`!")
 
     sources, count = retrieve_vectorized_title(index_name=indexname)
     sources = [source.replace(" --- ", " - ").replace("_","/") for source in sources]
